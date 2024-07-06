@@ -1,0 +1,21 @@
+name: coding-style-checker
+description: Check Epitech's C coding style
+author: "@lszsrd"
+
+runs:
+  using: "composite"
+  steps:
+  - name: Running bannana-checker
+    run: |
+        check.sh $(pwd) $(pwd)
+
+        if [ ! -s coding-style-reports.log ]; then
+          exit 0
+        fi
+
+        while IFS= read -r -a line; do
+            fields=($(printf "%s" "$line"|cut -d':' --output-delimiter=' ' -f1-))
+            echo "::error title=${fields[2]} coding style error,file=${fields[0]},line=${fields[1]}::${fields[3]}"
+        done < coding-style-reports.log
+        exit 1
+    shell: bash

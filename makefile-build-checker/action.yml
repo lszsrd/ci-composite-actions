@@ -1,0 +1,35 @@
+name: makefile-build-check
+description: Build a project using a Makefile rule
+author: "@lszsrd"
+
+inputs:
+  makefile-rule-name:
+    description: Makefile's rule to build
+    required: false
+    default: all
+
+  binary-name:
+    description: Compiled binary name
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+  - name: Building ${{ inputs.makefile-rule-name }} project
+    run: |
+        make ${{ inputs.makefile-rule-name }}
+
+        if [ $? -ne 0 ]; then
+            echo "::error::Couldn't build ${{ inputs.makefile-rule-name }}"
+            exit 1
+        fi
+        exit 0
+    shell: bash
+
+  - name: Checking ${{ inputs.binary-name }}'s execution permission
+    run: |
+        if [ ! -x ${{ inputs.binary-name }} ]; then
+            echo "::error::Couldn't run ${{ inputs.binary-name }}"
+            exit 1
+        fi
+    shell: bash

@@ -1,0 +1,36 @@
+name: banned-symbols
+description: Check for specific forbidden libc's symbols
+author: "@lszsrd"
+
+inputs:
+  binary-name:
+    description: Binary to extract symbols from
+    required: true
+
+  forbidden-symbols:
+    description: List of forbidden symbols, as an array
+    required: true
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+  - name: Checking ${{ inputs.binary-name }}'s symbols
+    run: |
+        declare -a -r forbidden_symbols="(${{ inputs.forbidden-symbols }})"
+        declare -i exit_status=0
+
+        nm ${{ inputs.binary-name }} > libc_checker.logs
+        if [ $? -ne 0 ]; then
+            echo -e "::error::Couldn't extract ${{ inputs.binary-name }}'s symbols"
+            exit 0
+        fi
+
+        for i in "${forbidden_symbols[@]}"; do
+            if [ $(cat libc_checker.logs | grep -c -w"$i") -gt 0 ]; then
+                echo "::error::Banned function used: " $i
+                exit_status=1
+            fi
+        done
+        exit $exit_status
+    shell: bash

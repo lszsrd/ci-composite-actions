@@ -1,0 +1,46 @@
+name: authorized-symbols
+description: Check for any forbidden libc's symbols
+author: "@lszsrd"
+
+inputs:
+  binary-name:
+    description: Binary to extract symbols from
+    required: true
+
+  allowed-symbols:
+    description: List of allowed symbols, as an array
+    required: true
+    default: "write malloc free"
+
+runs:
+  using: "composite"
+  steps:
+  - name: Checking ${{ inputs.binary-name }}'s symbols
+    run: |
+        declare -a -r allowed_symbols="(${{ inputs.allowed-symbols }})"
+        declare -i exit_status=0
+
+        nm ${{ inputs.binary-name }} > libc_checker.logs
+        if [ $? -ne 0 ]; then
+            echo -e "::error::Couldn't extract ${{ inputs.binary-name }}'s symbols"
+            exit 0
+        fi
+
+        while IFS= read -r libc_symbol; do
+            declare -i ignore_current_libc_symbol=0
+
+            for i in "${allowed_symbols[@]}"; do
+                if [ $i == $libc_symbol ]; then
+                    ignore_current_libc_symbol=1
+                fi
+            done
+
+            if [ $ignore_current_libc_symbol -eq 0 ]; then
+                if [ $(cat libc_checker.logs | grep -c -w "$libc_symbol") -gt 0 ]; then
+                    echo "::error::Banned function used: " $libc_symbol
+                    exit_status=1
+                fi
+            fi
+        done < ${{ github.action_path }}/libc_symbols.list
+        exit $exit_status
+    shell: bash

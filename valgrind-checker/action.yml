@@ -1,0 +1,37 @@
+name: valgrind-checker
+description: Run valgrind tool
+author: "@lszsrd"
+
+inputs:
+  binary-name:
+    description: Binary name
+    required: true
+
+  binary-arguments:
+    description: Binary arguments
+    required: false
+
+  valgrind-options:
+    description: Valgrind's arguments
+    required: false
+    default: --leak-check=full --show-leak-kinds=all
+
+runs:
+  using: "composite"
+  steps:
+  - name: Running valgrind tool for ${{ inputs.binary-name }} executable
+    run: |
+        valgrind ${{ inputs.valgrind-options }} ./${{ inputs.binary-name }} ${{ inputs.binary-arguments }} &> logs
+
+        if [ -z $(cat logs | grep -a "errors " | cut -d ' ' -f4) ] || [ -z $(cat logs | grep -a "contexts" | cut -d ' ' -f7) ]; then
+          echo "::error::Errors were found while running ./${{ inputs.binary-name }} ${{ inputs.binary-arguments }}"
+          cat logs
+          exit 1
+        fi
+
+        if [ -z "$(cat logs | grep "no leaks are possible")" ]; then
+          echo "::error::Memory leaks were found while running ./${{ inputs.binary-name }} ${{ inputs.binary-arguments }}"
+          cat logs
+          exit 1
+        fi
+    shell: bash
