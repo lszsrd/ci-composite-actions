@@ -27,7 +27,7 @@ runs:
         fi
 
         for i in "${forbidden_symbols[@]}"; do
-            if [ $(cat libc_checker.logs | grep -c -w"$i") -gt 0 ]; then
+            if [ $(cat libc_checker.logs | grep -c -w "$i") -gt 0 ]; then
                 echo "::error::Banned function used: " $i
                 exit_status=1
             fi
